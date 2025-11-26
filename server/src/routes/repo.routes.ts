@@ -9,9 +9,76 @@ function serializeBigInt(obj: any) {
 
 export default async function (app: FastifyInstance) {
   app.post("/", async (request, reply) => {
-    const body = request.body as any;
-    const created = await prisma.repo.create({ data: body });
-    return reply.code(201).send(created);
+    const body = (request.body as any) || {};
+    let { name, url } = body;
+    if (!url) return reply.code(400).send({ error: "url required" });
+    // Derive name from URL if not provided
+    if (!name) {
+      try {
+        const cleaned = url.trim();
+        const withoutGit = cleaned.replace(/\.git$/i, "");
+        const parts = withoutGit.split("/").filter(Boolean);
+        name = parts[parts.length - 1];
+      } catch {
+        name = url; // fallback
+      }
+    }
+    try {
+      const created = await prisma.repo.create({
+        data: {
+          name,
+          url,
+          // Force uncategorized & description deferred to analyzer
+          category: null,
+          description: null,
+        },
+      });
+      return reply.code(201).send(created);
+    } catch (e: any) {
+      if (e.code === "P2002") {
+        return reply.code(409).send({ error: "Repository URL already exists" });
+      }
+      return reply.code(400).send({ error: "Create failed" });
+    }
+  });
+
+  // Bulk add endpoint: accepts { urls: string[] }
+  app.post("/bulk", async (request, reply) => {
+    const body = (request.body as any) || {};
+    const urls: string[] = Array.isArray(body.urls) ? body.urls : [];
+    if (!urls.length)
+      return reply.code(400).send({ error: "urls array required" });
+    const created: any[] = [];
+    const skipped: any[] = [];
+    for (const raw of urls) {
+      const url = (raw || "").trim();
+      if (!url) continue;
+      // Normalize: if user provided owner/repo only, prepend GitHub URL
+      const normalized = /^(https?:)?\/\//i.test(url)
+        ? url
+        : `https://github.com/${url.replace(/^https?:\/\//, "")}`;
+      let name: string;
+      try {
+        const cleaned = normalized.replace(/\.git$/i, "");
+        const parts = cleaned.split("/").filter(Boolean);
+        name = parts[parts.length - 1];
+      } catch {
+        name = normalized;
+      }
+      try {
+        const repo = await prisma.repo.create({
+          data: { name, url: normalized, category: null, description: null },
+        });
+        created.push(repo);
+      } catch (e: any) {
+        if (e.code === "P2002") {
+          skipped.push({ url: normalized, reason: "duplicate" });
+        } else {
+          skipped.push({ url: normalized, reason: "error" });
+        }
+      }
+    }
+    return reply.code(201).send({ created, skipped });
   });
 
   app.get("/", async (request, reply) => {
@@ -155,8 +222,30 @@ export default async function (app: FastifyInstance) {
     }
   });
 
-  // stub for future analyze action
+  // analyze action: forward to analyzer service
   app.post("/:id/analyze", async (request, reply) => {
-    return reply.code(202).send({ message: "Analyze job accepted (stub)" });
+    const id = Number((request.params as any).id);
+    const repo = await prisma.repo.findUnique({ where: { id } });
+    if (!repo) return reply.code(404).send({ error: "Not found" });
+
+    const analyzerUrl = process.env.ANALYZER_URL || "http://analyzer:8001";
+    try {
+      const res = await fetch(`${analyzerUrl}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repoUrl: repo.url, repoId: repo.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return reply.code(502).send({ error: "Analyzer error", details: data });
+      }
+      return reply
+        .code(202)
+        .send({ message: "Analyze job accepted", result: data });
+    } catch (e: any) {
+      return reply
+        .code(502)
+        .send({ error: "Analyzer unreachable", details: String(e) });
+    }
   });
 }

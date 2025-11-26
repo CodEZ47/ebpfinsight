@@ -33,7 +33,16 @@ export default async function RepoPage({ params }: { params: { id: string } }) {
     <div>
       <div className="mb-4">
         <h1 className="text-2xl font-bold">{repo.name}</h1>
-        <p className="text-sm text-gray-600">{repo.url}</p>
+        <p className="text-sm text-gray-600">
+          <a
+            href={repo.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline break-all"
+          >
+            {repo.url}
+          </a>
+        </p>
         <p className="mt-2">{repo.description}</p>
         <div className="mt-3 text-sm text-gray-700 space-y-1">
           {repo.category && (
