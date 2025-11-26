@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryEnum {
+  CLOUD_NATIVE_NETWORKING
+  DEFENSIVE_SECURITY
+  DEVELOPER_TOOLING_FRAMEWORKS
+  EDUCATIONAL_DEMONSTRATION_RESOURCES
+  KERNEL_DATAPLANE_NETWORKING
+  OBSERVABILITY
+  OFFENSIVE_SECURITY
+  OPERATIONS_ORCHESTRATION_LIFECYCLE
+  PLATFORM_RUNTIME_ACCELERATION
+  RUNTIME_SECURITY
+}
+
+model Repo {
+  id            Int             @id @default(autoincrement())
+  name          String
+  url           String          @unique
+  description   String?
+  category      CategoryEnum?
+  rationale     String?         
+  suggestedNewClass String?     
+  createdAt     DateTime        @default(now())
+
+  analysis      Analysis[]
+  overheadTests OverheadTest[]
+
+  @@map("repos")
+}
+
+model Analysis {
+  id            Int      @id @default(autoincrement())
+  repoId        Int
+
+  stars         Int?
+  forks         Int?
+  watchers      Int?
+  issues        Int?         
+  language      String?      
+  commits       Int?         
+  readmeText    String?      
+
+  cloneUrl      String?
+  defaultBranch String?
+  analyzedAt    DateTime @default(now())
+
+  repo          Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@map("analysis")
+}
+
+model OverheadTest {
+  id                     Int      @id @default(autoincrement())
+  repoId                 Int
+  runCount               BigInt?
+  totalRunTimeNs         BigInt?
+  avgTimePerRunNs        Float?
+  baselineCpuUsage       Float?
+  baselineLatencyMs      Float?
+  baselineThroughput     Float?
+  instrumentedCpuUsage   Float?
+  instrumentedLatencyMs  Float?
+  instrumentedThroughput Float?
+  testedAt               DateTime @default(now())
+
+  repo                   Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@map("overhead_tests")
+}
