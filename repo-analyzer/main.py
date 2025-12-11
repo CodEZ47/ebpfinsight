@@ -113,6 +113,18 @@ async def fetch_repo_metadata(owner: str, repo: str):
                 except Exception:
                     commits = None
 
+        # Parse timestamps
+        created_at = info.get("created_at")
+        updated_at = info.get("updated_at")
+        try:
+            created_dt = datetime.fromisoformat(created_at.replace("Z", "+00:00")) if created_at else None
+        except Exception:
+            created_dt = None
+        try:
+            updated_dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00")) if updated_at else None
+        except Exception:
+            updated_dt = None
+
         data = {
             "stars": info.get("stargazers_count"),
             "forks": info.get("forks_count"),
@@ -123,6 +135,8 @@ async def fetch_repo_metadata(owner: str, repo: str):
             "readmeText": readme_text,
             "cloneUrl": info.get("clone_url"),
             "defaultBranch": info.get("default_branch"),
+            "repoCreatedAt": created_dt,
+            "repoUpdatedAt": updated_dt,
         }
         return data
 
@@ -144,8 +158,11 @@ async def analyze(payload: AnalyzeRequest):
 
             cur.execute(
                 """
-                INSERT INTO analysis("repoId","stars","forks","watchers","issues","language","commits","readmeText","cloneUrl","defaultBranch","analyzedAt")
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO analysis(
+                  "repoId","stars","forks","watchers","issues","language","commits",
+                  "readmeText","cloneUrl","defaultBranch","repoCreatedAt","repoUpdatedAt","analyzedAt"
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 RETURNING id
                 """,
                 (
@@ -159,6 +176,8 @@ async def analyze(payload: AnalyzeRequest):
                     meta.get("readmeText"),
                     meta.get("cloneUrl"),
                     meta.get("defaultBranch"),
+                    meta.get("repoCreatedAt"),
+                    meta.get("repoUpdatedAt"),
                     datetime.utcnow(),
                 ),
             )

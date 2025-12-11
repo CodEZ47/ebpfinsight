@@ -11,6 +11,13 @@ async function getAnalysisById(analysisId: string) {
   return res.json();
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleString();
+}
+
 export default async function AnalysisDetail({
   params,
 }: {
@@ -20,57 +27,102 @@ export default async function AnalysisDetail({
   const a = await getAnalysisById(analysisId);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Analysis Detail</h1>
-        <div className="space-x-4">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-3xl border border-emerald-100 bg-white/80 p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Analysis Detail
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Deep dive into the metrics captured during this repository scan.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <Link
             href={`/repos/${id}/analysis`}
-            className="text-sm text-blue-600"
+            className="inline-flex items-center rounded-full border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50"
           >
-            ← Back to list
+            ← Back to history
           </Link>
-          <Link href={`/repos/${id}`} className="text-sm text-blue-600">
-            Repo
+          <Link
+            href={`/repos/${id}`}
+            className="inline-flex items-center rounded-full border border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-emerald-600 hover:bg-emerald-600"
+          >
+            Open repository
           </Link>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div>
-            <span className="font-medium">Stars:</span> {a.stars ?? "-"}
+      <div className="rounded-3xl border border-emerald-100 bg-white/80 p-6 shadow-sm">
+        <div className="grid gap-4 text-sm text-slate-600 md:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-50 bg-emerald-50/70 px-4 py-3">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Stars
+            </span>
+            <div className="mt-2 text-lg font-semibold text-slate-900">
+              {a.stars ?? "—"}
+            </div>
           </div>
-          <div>
-            <span className="font-medium">Forks:</span> {a.forks ?? "-"}
+          <div className="rounded-2xl border border-emerald-50 bg-white px-4 py-3 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Forks
+            </span>
+            <div className="mt-2 text-lg font-semibold text-slate-900">
+              {a.forks ?? "—"}
+            </div>
           </div>
-          <div>
-            <span className="font-medium">Watchers:</span> {a.watchers ?? "-"}
+          <div className="rounded-2xl border border-emerald-50 bg-white px-4 py-3 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Watchers
+            </span>
+            <div className="mt-2 text-lg font-semibold text-slate-900">
+              {a.watchers ?? "—"}
+            </div>
           </div>
-          <div>
-            <span className="font-medium">Issues:</span> {a.issues ?? "-"}
-          </div>
-          <div>
-            <span className="font-medium">Language:</span> {a.language ?? "-"}
-          </div>
-          <div>
-            <span className="font-medium">Commits:</span> {a.commits ?? "-"}
-          </div>
-          <div className="md:col-span-2">
-            <span className="font-medium">Clone URL:</span>{" "}
-            <span className="break-all">{a.cloneUrl ?? "-"}</span>
-          </div>
-          <div>
-            <span className="font-medium">Default Branch:</span>{" "}
-            {a.defaultBranch ?? "-"}
-          </div>
-          <div>
-            <span className="font-medium">Analyzed At:</span>{" "}
-            {new Date(a.analyzedAt).toLocaleString()}
+          <div className="rounded-2xl border border-emerald-50 bg-white px-4 py-3 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Issues
+            </span>
+            <div className="mt-2 text-lg font-semibold text-slate-900">
+              {a.issues ?? "—"}
+            </div>
           </div>
         </div>
 
-        <div className="pt-2">
+        <dl className="mt-6 grid gap-4 text-sm text-slate-600 md:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+            <span className="font-semibold text-slate-500">Language</span>
+            <p className="mt-1 font-medium text-slate-900">
+              {a.language ?? "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+            <span className="font-semibold text-slate-500">Commits</span>
+            <p className="mt-1 font-medium text-slate-900">
+              {a.commits ?? "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm md:col-span-2">
+            <span className="font-semibold text-slate-500">Clone URL</span>
+            <p className="mt-1 break-all font-medium text-emerald-600">
+              {a.cloneUrl ?? "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+            <span className="font-semibold text-slate-500">Default Branch</span>
+            <p className="mt-1 font-medium text-slate-900">
+              {a.defaultBranch ?? "—"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+            <span className="font-semibold text-slate-500">Analyzed At</span>
+            <p className="mt-1 font-medium text-slate-900">
+              {formatDate(a.analyzedAt)}
+            </p>
+          </div>
+        </dl>
+
+        <div className="mt-6">
           <ReadmeModal markdown={a.readmeText ?? null} />
         </div>
       </div>

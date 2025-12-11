@@ -22,146 +22,268 @@ async function getTests(id: string) {
   return res.json();
 }
 
+async function getPrimitives(id: string) {
+  const res = await fetch(`${API}/repos/${id}/primitives`, {
+    cache: "no-store",
+  });
+  return res.json();
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleString();
+}
+
+const sectionSurface =
+  "rounded-3xl border border-emerald-100 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-lg dark:shadow-slate-900/20";
+const tableContainer =
+  "mt-4 overflow-x-auto rounded-2xl border border-emerald-100 dark:border-slate-800";
+const tableBase =
+  "min-w-full divide-y divide-emerald-100 text-left text-sm text-slate-600 dark:divide-slate-800 dark:text-slate-300";
+const tableHeading =
+  "bg-emerald-50/60 text-xs uppercase text-emerald-700 dark:bg-slate-900/60 dark:text-emerald-300";
+const tableRow =
+  "bg-white/60 hover:bg-emerald-50/60 dark:bg-slate-900/60 dark:hover:bg-slate-900";
+const tableCellHighlight =
+  "px-4 py-3 font-medium text-slate-900 dark:text-slate-100";
+const tableCell = "px-4 py-3";
+
 export default async function RepoPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const repo = await getRepo(id);
   const analysis = await getAnalysis(id);
   const tests = await getTests(id);
+  const primitives = await getPrimitives(id);
   const latest = analysis && analysis.length ? analysis[0] : null;
 
   return (
-    <div>
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">{repo.name}</h1>
-        <p className="text-sm text-gray-600">
-          <a
-            href={repo.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline break-all"
-          >
-            {repo.url}
-          </a>
-        </p>
-        <p className="mt-2">{repo.description}</p>
-        <div className="mt-3 text-sm text-gray-700 space-y-1">
-          {repo.category && (
+    <div className="space-y-6">
+      <section className={sectionSurface}>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-3">
             <div>
-              <span className="font-medium">Category:</span> {repo.category}
+              <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                {repo.name}
+              </h1>
+              <a
+                href={repo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all text-sm text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"
+              >
+                {repo.url}
+              </a>
             </div>
-          )}
-          {repo.rationale && (
-            <div>
-              <span className="font-medium">Rationale:</span> {repo.rationale}
-            </div>
-          )}
-          {repo.suggestedNewClass && (
-            <div>
-              <span className="font-medium">Suggested Class:</span>{" "}
-              {repo.suggestedNewClass}
-            </div>
-          )}
-          {repo.createdAt && (
-            <div>
-              <span className="font-medium">Created:</span>{" "}
-              {new Date(repo.createdAt).toLocaleString()}
-            </div>
-          )}
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center gap-2">
+            {repo.description && (
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {repo.description}
+              </p>
+            )}
+            <dl className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <div className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                {repo.category ?? "Uncategorized"}
+              </div>
+              {repo.createdAt && (
+                <div className="rounded-full border border-emerald-100 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900/60">
+                  Created {formatDate(repo.createdAt)}
+                </div>
+              )}
+              {repo.rationale && (
+                <div className="rounded-full border border-emerald-100 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900/60">
+                  Rationale: {repo.rationale}
+                </div>
+              )}
+              {repo.suggestedNewClass && (
+                <div className="rounded-full border border-emerald-100 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900/60">
+                  Suggested class: {repo.suggestedNewClass}
+                </div>
+              )}
+            </dl>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <AnalyzeButton id={repo.id} />
             <CategorizeControl id={repo.id} current={repo.category ?? null} />
             <DeleteRepoButton id={repo.id} />
           </div>
         </div>
-      </div>
+      </section>
 
-      <section className="mb-6 bg-white p-4 rounded shadow">
-        <h2 className="font-semibold mb-2">Analysis</h2>
-        <div className="mb-4">
-          <ReadmeModal markdown={latest?.readmeText ?? null} />
+      <section className={sectionSurface}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Repo Analysis
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Stars, activity, and metadata from the latest repository scans.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <ReadmeModal markdown={latest?.readmeText ?? null} />
+            <Link
+              href={`/repos/${id}/repo-analysis`}
+              className="rounded-full border border-emerald-100 bg-white px-3 py-1 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-emerald-300 dark:hover:border-emerald-500/40 dark:hover:bg-slate-900"
+            >
+              See history →
+            </Link>
+          </div>
+        </div>
+        <div className={tableContainer}>
+          <table className={tableBase}>
+            <thead className={tableHeading}>
+              <tr>
+                <th className={tableCell}>Stars</th>
+                <th className={tableCell}>Forks</th>
+                <th className={tableCell}>Watchers</th>
+                <th className={tableCell}>Issues</th>
+                <th className={tableCell}>Language</th>
+                <th className={tableCell}>Commits</th>
+                <th className={tableCell}>Branch</th>
+                <th className={tableCell}>Repo Created</th>
+                <th className={tableCell}>Repo Updated</th>
+                <th className={tableCell}>Analyzed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-emerald-50 dark:divide-slate-800">
+              {analysis.map((a: any) => (
+                <tr key={a.id} className={tableRow}>
+                  <td className={tableCellHighlight}>{a.stars ?? "—"}</td>
+                  <td className={tableCell}>{a.forks ?? "—"}</td>
+                  <td className={tableCell}>{a.watchers ?? "—"}</td>
+                  <td className={tableCell}>{a.issues ?? "—"}</td>
+                  <td className={tableCell}>{a.language ?? "—"}</td>
+                  <td className={tableCell}>{a.commits ?? "—"}</td>
+                  <td className={tableCell}>{a.defaultBranch ?? "—"}</td>
+                  <td className={tableCell}>{formatDate(a.repoCreatedAt)}</td>
+                  <td className={tableCell}>{formatDate(a.repoUpdatedAt)}</td>
+                  <td className={tableCell}>{formatDate(a.analyzedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className={sectionSurface}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Primitive Analysis
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Summaries for helpers, maps, and attach points derived from the
+              latest runs.
+            </p>
+          </div>
           <Link
-            href={`/repos/${id}/analysis`}
-            className="ml-2 text-sm text-blue-600"
+            href={`/repos/${id}/primitives`}
+            className="rounded-full border border-emerald-100 bg-white px-3 py-1 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-emerald-300 dark:hover:border-emerald-500/40 dark:hover:bg-slate-900"
           >
-            See more →
+            Explore primitives →
           </Link>
         </div>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-sm text-gray-600">
-              <th>Stars</th>
-              <th>Forks</th>
-              <th>Watchers</th>
-              <th>Issues</th>
-              <th>Language</th>
-              <th>Commits</th>
-              <th>Branch</th>
-              <th>Analyzed At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analysis.map((a: any) => (
-              <tr key={a.id}>
-                <td>{a.stars ?? "-"}</td>
-                <td>{a.forks ?? "-"}</td>
-                <td>{a.watchers ?? "-"}</td>
-                <td>{a.issues ?? "-"}</td>
-                <td>{a.language ?? "-"}</td>
-                <td>{a.commits ?? "-"}</td>
-                <td>{a.defaultBranch ?? "-"}</td>
-                <td>{new Date(a.analyzedAt).toLocaleString()}</td>
+        <div className={tableContainer}>
+          <table className={tableBase}>
+            <thead className={tableHeading}>
+              <tr>
+                <th className={tableCell}>Programs</th>
+                <th className={tableCell}>Program Types</th>
+                <th className={tableCell}>Helpers</th>
+                <th className={tableCell}>Unique Helpers</th>
+                <th className={tableCell}>Maps</th>
+                <th className={tableCell}>Unique Maps</th>
+                <th className={tableCell}>Attach Points</th>
+                <th className={tableCell}>Unique Attach Pts</th>
+                <th className={tableCell}>Analyzed</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-emerald-50 dark:divide-slate-800">
+              {primitives.map((p: any) => (
+                <tr key={p.id} className={tableRow}>
+                  <td className={tableCellHighlight}>
+                    {p.totalPrograms ?? "—"}
+                  </td>
+                  <td className={tableCell}>{p.totalProgramTypes ?? "—"}</td>
+                  <td className={tableCell}>{p.totalHelpers ?? "—"}</td>
+                  <td className={tableCell}>{p.uniqueHelpers ?? "—"}</td>
+                  <td className={tableCell}>{p.totalMaps ?? "—"}</td>
+                  <td className={tableCell}>{p.uniqueMaps ?? "—"}</td>
+                  <td className={tableCell}>{p.totalAttachPoints ?? "—"}</td>
+                  <td className={tableCell}>{p.uniqueAttachPoints ?? "—"}</td>
+                  <td className={tableCell}>{formatDate(p.analyzedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <section className="bg-white p-4 rounded shadow">
-        <h2 className="font-semibold mb-2">Overhead Tests</h2>
-        <div className="mb-3">
-          <Link href={`/repos/${id}/tests`} className="text-sm text-blue-600">
-            See more →
+      <section className={sectionSurface}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Overhead Tests
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Baseline versus instrumented performance captured during test
+              runs.
+            </p>
+          </div>
+          <Link
+            href={`/repos/${id}/tests`}
+            className="rounded-full border border-emerald-100 bg-white px-3 py-1 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-emerald-300 dark:hover:border-emerald-500/40 dark:hover:bg-slate-900"
+          >
+            View all tests →
           </Link>
         </div>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-sm text-gray-600">
-              <th>Run Count</th>
-              <th>Total Run Time (ns)</th>
-              <th>Avg per Run (ns)</th>
-              <th>Baseline CPU</th>
-              <th>Baseline Latency (ms)</th>
-              <th>Baseline Throughput</th>
-              <th>Instr. CPU</th>
-              <th>Instr. Latency (ms)</th>
-              <th>Instr. Throughput</th>
-              <th>Tested At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tests.map((t: any) => (
-              <tr key={t.id}>
-                <td>{t.runCount ?? "-"}</td>
-                <td>{t.totalRunTimeNs ?? "-"}</td>
-                <td>{t.avgTimePerRunNs ?? "-"}</td>
-                <td>{t.baselineCpuUsage ?? "-"}</td>
-                <td>{t.baselineLatencyMs ?? "-"}</td>
-                <td>{t.baselineThroughput ?? "-"}</td>
-                <td>{t.instrumentedCpuUsage ?? "-"}</td>
-                <td>{t.instrumentedLatencyMs ?? "-"}</td>
-                <td>{t.instrumentedThroughput ?? "-"}</td>
-                <td>{new Date(t.testedAt).toLocaleString()}</td>
+        <div className={tableContainer}>
+          <table className={tableBase}>
+            <thead className={tableHeading}>
+              <tr>
+                <th className={tableCell}>Run Count</th>
+                <th className={tableCell}>Total Runtime (ns)</th>
+                <th className={tableCell}>Avg per Run (ns)</th>
+                <th className={tableCell}>Baseline CPU</th>
+                <th className={tableCell}>Baseline Latency</th>
+                <th className={tableCell}>Baseline Throughput</th>
+                <th className={tableCell}>Instr. CPU</th>
+                <th className={tableCell}>Instr. Latency</th>
+                <th className={tableCell}>Instr. Throughput</th>
+                <th className={tableCell}>Tested</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-emerald-50 dark:divide-slate-800">
+              {tests.map((t: any) => (
+                <tr key={t.id} className={tableRow}>
+                  <td className={tableCellHighlight}>{t.runCount ?? "—"}</td>
+                  <td className={tableCell}>{t.totalRunTimeNs ?? "—"}</td>
+                  <td className={tableCell}>{t.avgTimePerRunNs ?? "—"}</td>
+                  <td className={tableCell}>{t.baselineCpuUsage ?? "—"}</td>
+                  <td className={tableCell}>{t.baselineLatencyMs ?? "—"}</td>
+                  <td className={tableCell}>{t.baselineThroughput ?? "—"}</td>
+                  <td className={tableCell}>{t.instrumentedCpuUsage ?? "—"}</td>
+                  <td className={tableCell}>
+                    {t.instrumentedLatencyMs ?? "—"}
+                  </td>
+                  <td className={tableCell}>
+                    {t.instrumentedThroughput ?? "—"}
+                  </td>
+                  <td className={tableCell}>{formatDate(t.testedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <div className="mt-4">
-        <Link href="/repos" className="text-sm text-blue-600">
-          ← Back
+      <div className="flex justify-end">
+        <Link
+          href="/repos"
+          className="inline-flex items-center rounded-full border border-emerald-100 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900/60 dark:text-emerald-300 dark:hover:border-emerald-500/40 dark:hover:bg-slate-900"
+        >
+          ← Back to repositories
         </Link>
       </div>
     </div>

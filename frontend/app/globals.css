@@ -12,3 +12,42 @@ body,
 .container {
   max-width: 960px;
 }
+
+body {
+  font-feature-settings: "liga" "calt";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #ecfdf5;
+}
+::-webkit-scrollbar-thumb {
+  background: #6ee7b7;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #34d399;
+}
+
+.chart-wrapper .recharts-legend-item-text {
+  font-size: 11px;
+  fill: #475569;
+}
+
+.fade-in {
+  animation: fade-in 0.25s ease-in-out;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

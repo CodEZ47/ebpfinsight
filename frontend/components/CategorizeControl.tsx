@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getApiBase } from "../lib/apiBase";
+import { getApiBase } from "../libs/apiBase";
+import SelectMenu from "@/components/SelectMenu";
+import { useSnackbar } from "./SnackbarProvider";
 
 const categories = [
   "CLOUD_NATIVE_NETWORKING",
@@ -30,39 +32,69 @@ export default function CategorizeControl({
     (current as Category) || ""
   );
   const router = useRouter();
+  const { showSnackbar } = useSnackbar();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const labelFor = (category: string | null | undefined) => {
+    if (!category || category === "UNCATEGORIZED") return "Uncategorized";
+    return category.replace(/_/g, " ");
+  };
 
   const onSave = async () => {
     const API = getApiBase();
     const body = { category: value || "UNCATEGORIZED" };
-    const res = await fetch(`${API}/repos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      alert("Failed to update category");
-      return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${API}/repos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showSnackbar({
+          message: payload?.error || "Failed to update category",
+          intent: "error",
+        });
+        return;
+      }
+      const resolvedCategory =
+        payload?.category ?? body.category ?? value ?? null;
+      showSnackbar({
+        message: `Category updated to ${labelFor(resolvedCategory)}`,
+        intent: "success",
+      });
+      router.refresh();
+    } catch (err: any) {
+      showSnackbar({
+        message: err?.message || "Network error while updating category",
+        intent: "error",
+      });
+    } finally {
+      setIsSaving(false);
     }
-    router.refresh();
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <select
-        className="border px-2 py-1 rounded text-sm"
+    <div className="flex flex-wrap items-center gap-3">
+      <SelectMenu
+        options={[
+          { value: "", label: "Select category" },
+          ...categories.map((categoryValue) => ({
+            value: categoryValue,
+            label: labelFor(categoryValue),
+          })),
+        ]}
         value={value}
-        onChange={(e) => setValue(e.target.value as Category)}
-      >
-        <option value="">Select category</option>
-        {categories.map((c) => (
-          <option key={c} value={c}>
-            {c === "UNCATEGORIZED" ? "Uncategorized" : c}
-          </option>
-        ))}
-      </select>
+        onValueChange={(next) => setValue(next as Category | "")}
+        placeholder="Select category"
+        className="min-w-[220px]"
+        disabled={isSaving}
+      />
       <button
         onClick={onSave}
-        className="px-3 py-1 text-sm bg-indigo-600 text-white rounded"
+        className="inline-flex items-center rounded-full border border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:border-emerald-600 hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isSaving}
       >
         Categorize
       </button>

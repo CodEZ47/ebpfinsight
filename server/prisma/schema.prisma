@@ -32,6 +32,7 @@ model Repo {
 
   analysis      Analysis[]
   overheadTests OverheadTest[]
+  primitiveAnalyses PrimitiveAnalysis[]
 
   @@map("repos")
 }
@@ -47,6 +48,8 @@ model Analysis {
   language      String?      
   commits       Int?         
   readmeText    String?      
+  repoCreatedAt DateTime?
+  repoUpdatedAt DateTime?
 
   cloneUrl      String?
   defaultBranch String?
@@ -74,4 +77,32 @@ model OverheadTest {
   repo                   Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
 
   @@map("overhead_tests")
+}
+
+model PrimitiveAnalysis {
+  id        Int      @id @default(autoincrement())
+  repoId    Int
+
+  // Aggregated counts
+  totalPrograms       Int?
+  totalProgramTypes   Int?
+  totalHelpers        Int?
+  uniqueHelpers       Int?
+  totalMaps           Int?
+  uniqueMaps          Int?
+  totalAttachPoints   Int?
+  uniqueAttachPoints  Int?
+
+  // Raw breakdowns
+  mapTypes        Json?
+  attachTypes     Json?
+  helpers         Json?
+  programSections Json? // includes sec_full
+  programTypesInferred Json?
+  programTypesTokens   Json?
+
+  analyzedAt DateTime @default(now())
+  repo       Repo     @relation(fields: [repoId], references: [id], onDelete: Cascade)
+
+  @@map("primitive_analysis")
 }
