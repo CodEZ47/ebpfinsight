@@ -1,0 +1,30 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "ebpf-lab"
+
+  # Static private IP so your backend can always SSH to the same place
+  config.vm.network "private_network", ip: "192.168.56.20"
+
+  # Optional: forward SSH to host port 2222 (helps for debugging)
+  config.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
+
+  # Sync this repo folder into the VM at /vagrant
+  # (By default, Vagrant syncs the Vagrantfile directory to /vagrant already.)
+  # If you want repo-root instead, point it explicitly:
+  repo_root = File.expand_path("../../", __dir__)
+  config.vm.synced_folder repo_root, "/vagrant", type: "virtualbox"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "ebpf-lab"
+    vb.memory = 8192
+    vb.cpus = 4
+  end
+
+  # Provision scripts in order
+  config.vm.provision "shell", path: "provision/00-base.sh", privileged: true
+  config.vm.provision "shell", path: "provision/10-ebpf.sh", privileged: true
+  config.vm.provision "shell", path: "provision/20-benchmark.sh", privileged: true
+
+  # Keep SSH stable
+  config.ssh.keep_alive = true
+end

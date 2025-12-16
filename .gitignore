@@ -200,3 +200,7 @@ docker-compose.override.yml
 docker-compose.*.local
 *.tar
 *.tar.gz
+
+
+# benchmark temporarily not tracked
+benchmark 

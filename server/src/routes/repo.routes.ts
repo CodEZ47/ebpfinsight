@@ -482,7 +482,7 @@ export default async function (app: FastifyInstance) {
     if (!repo) return reply.code(404).send({ error: "Not found" });
 
     const primitiveUrl =
-      process.env.PRIMITIVE_ANALYZER_URL || "http://primitive-analyzer:5000";
+      process.env.PRIMITIVE_ANALYZER_URL || "http://primitive-analyzer:5050";
     try {
       const res = await fetch(`${primitiveUrl}/clone-and-analyze`, {
         method: "POST",
